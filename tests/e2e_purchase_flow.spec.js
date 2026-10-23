@@ -4,10 +4,13 @@ const { SmartWait } = require('../utils/SmartWait');
 
 test.describe('Purchase Flow & Stripe Checkout', () => {
 
-  test('User can select Year-Make-Model Basic license and proceed to secure Stripe checkout', async ({ page }, testInfo) => {
+  test('User can select Year-Make-Model Basic license and inspect access modal details', async ({ page }, testInfo) => {
+    // In live production, creating live Stripe charges or initiating checkout with test credentials
+    // must be protected against creating live charges.
+    const isProduction = process.env.BASE_URL?.includes('cardatabases.com') && !process.env.BASE_URL?.includes('dev.');
     const logger = new Logger(testInfo);
-    logger.annotate('feature', 'Single Product Stripe Checkout');
-    logger.annotate('requirement', 'REQ-PUR-001');
+    logger.annotate('feature', 'Single Product Access Modal');
+    logger.annotate('environment', isProduction ? 'Live Production (Protected)' : 'Dev QA');
 
     await test.step('1. Navigate to Year-Make-Model product page', async () => {
       await page.goto('/year-make-model', { waitUntil: 'domcontentloaded' });
@@ -45,8 +48,13 @@ test.describe('Purchase Flow & Stripe Checkout', () => {
       await logger.info('Verified empty form submission is blocked by browser constraint validation');
     });
 
+    if (isProduction) {
+      test.skip(true, 'Live production environment: Skipping real Stripe charge creation on https://cardatabases.com');
+      return;
+    }
+
     let checkoutSecret = null;
-    await test.step('5. Fill contact details and proceed to Stripe Checkout', async () => {
+    await test.step('5. Fill contact details and proceed to Stripe Checkout (Dev QA Only)', async () => {
       const modal = page.locator('div.fixed.inset-0');
       await modal.locator('input[type="text"]').fill('Automation QA Buyer');
       await modal.locator('input[type="email"]').fill('automation.qa@example.com');
@@ -72,7 +80,7 @@ test.describe('Purchase Flow & Stripe Checkout', () => {
       });
     });
 
-    await test.step('6. Verify Stripe embedded checkout iframe is rendered on /checkout', async () => {
+    await test.step('6. Verify Stripe embedded checkout iframe is rendered on /checkout (Dev QA Only)', async () => {
       await page.waitForURL('**/checkout**', { timeout: 15000 });
       const stripeFrame = page.locator('iframe[src*="stripe.com"]').first();
       await expect(stripeFrame).toBeVisible({ timeout: 15000 });

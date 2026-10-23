@@ -17,7 +17,7 @@ module.exports = defineConfig({
     ['json', { outputFile: 'test-results/results.json' }]
   ],
   use: {
-    baseURL: 'https://dev.cardatabases.com',
+    baseURL: process.env.BASE_URL || 'https://cardatabases.com',
     actionTimeout: 10000,
     navigationTimeout: 20000,
     trace: 'retain-on-failure',

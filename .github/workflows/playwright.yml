@@ -2,11 +2,19 @@ name: Playwright Tests & GitHub Pages Deployment
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, dev-qa, production ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, dev-qa, production ]
   workflow_dispatch:
     inputs:
+      environment:
+        description: 'Target Environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - 'production'
+          - 'dev-qa'
       retries:
         description: 'Number of test retries'
         required: false
@@ -23,7 +31,7 @@ concurrency:
 
 jobs:
   test:
-    name: Run E2E & Functional Test Suite
+    name: Run E2E Test Suite (${{ github.ref_name }})
     timeout-minutes: 30
     runs-on: ubuntu-latest
     permissions:
@@ -63,16 +71,36 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
+      - name: Determine Target Base URL and Environment Name
+        id: env-config
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ github.event.inputs.environment }}" = "dev-qa" ]; then
+              echo "base_url=https://dev.cardatabases.com" >> $GITHUB_OUTPUT
+              echo "env_name=dev-qa" >> $GITHUB_OUTPUT
+            else
+              echo "base_url=https://cardatabases.com" >> $GITHUB_OUTPUT
+              echo "env_name=production" >> $GITHUB_OUTPUT
+            fi
+          elif [ "${{ github.ref_name }}" = "dev-qa" ]; then
+            echo "base_url=https://dev.cardatabases.com" >> $GITHUB_OUTPUT
+            echo "env_name=dev-qa" >> $GITHUB_OUTPUT
+          else
+            echo "base_url=https://cardatabases.com" >> $GITHUB_OUTPUT
+            echo "env_name=production" >> $GITHUB_OUTPUT
+          fi
+
       - name: Execute Playwright Tests (CI Mode, 0 Retries)
         run: npx playwright test --retries=${{ github.event.inputs.retries || '0' }}
         env:
           CI: true
+          BASE_URL: ${{ steps.env-config.outputs.base_url }}
 
       - name: Upload Playwright Raw HTML Report as Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ github.ref_name }}
           path: playwright-report/
           retention-days: 30
 
@@ -80,23 +108,71 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-${{ github.ref_name }}
           path: test-results/
           retention-days: 30
 
+      - name: Prepare Multi-Environment Report Structure
+        if: always()
+        run: |
+          TARGET_DIR="gh-pages-site/${{ steps.env-config.outputs.env_name }}"
+          mkdir -p "$TARGET_DIR"
+          cp -r playwright-report/* "$TARGET_DIR/"
+          
+          # Create a landing index.html if it does not exist so you can access both /dev-qa and /production
+          cat << 'EOF' > gh-pages-site/index.html
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>CarDatabases Test Reports Hub</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0a0f14; color: #fff; padding: 40px 20px; text-align: center; }
+              .card { background: #141c24; border: 1px solid #2d3748; border-radius: 12px; padding: 24px; max-width: 600px; margin: 20px auto; text-align: left; }
+              h1 { color: #ff5722; }
+              a.btn { display: inline-block; background: #ff5722; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 10px; }
+              a.btn:hover { background: #e64a19; }
+              .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
+              .badge-qa { background: #1e3a5f; color: #60a5fa; }
+              .badge-prod { background: #064e3b; color: #34d399; }
+              p { color: #94a3b8; font-size: 14px; margin: 6px 0; }
+            </style>
+          </head>
+          <body>
+            <h1>CarDatabases QA & E2E Reports Hub</h1>
+            <p>Select environment report below to view interactive Playwright test proofs, screenshots, and logs:</p>
+            
+            <div class="card">
+              <span class="badge badge-prod">Production (Live Domain)</span>
+              <h3>Production Test Report</h3>
+              <p>Automated regression suite against <strong>https://cardatabases.com</strong> with live purchase safeguards.</p>
+              <a class="btn" href="./production/">View Production Report &rarr;</a>
+            </div>
+
+            <div class="card">
+              <span class="badge badge-qa">Dev QA (Staging Domain)</span>
+              <h3>Dev QA Test Report</h3>
+              <p>Full E2E suite against <strong>https://dev.cardatabases.com</strong> with end-to-end Stripe payment testing.</p>
+              <a class="btn" href="./dev-qa/">View Dev QA Report &rarr;</a>
+            </div>
+          </body>
+          </html>
+          EOF
+
       - name: Setup GitHub Pages
-        if: always() && github.ref == 'refs/heads/main'
+        if: always()
         uses: actions/configure-pages@v5
 
-      - name: Upload GitHub Pages Artifact (All Report Assets, Screenshots & Data)
-        if: always() && github.ref == 'refs/heads/main'
+      - name: Upload GitHub Pages Artifact (Multi-Environment Reports)
+        if: always()
         uses: actions/upload-pages-artifact@v3
         with:
-          path: playwright-report/
+          path: gh-pages-site/
 
   deploy-pages:
     name: Deploy Test Report to GitHub Pages
-    if: always() && github.ref == 'refs/heads/main'
+    if: always()
     needs: test
     runs-on: ubuntu-latest
     environment:
