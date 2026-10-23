@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CarDatabases Test Reports Hub</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0a0f14; color: #fff; padding: 40px 20px; text-align: center; }
+    .card { background: #141c24; border: 1px solid #2d3748; border-radius: 12px; padding: 24px; max-width: 600px; margin: 20px auto; text-align: left; }
+    h1 { color: #ff5722; }
+    a.btn { display: inline-block; background: #ff5722; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 10px; }
+    a.btn:hover { background: #e64a19; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
+    .badge-qa { background: #1e3a5f; color: #60a5fa; }
+    .badge-prod { background: #064e3b; color: #34d399; }
+    p { color: #94a3b8; font-size: 14px; margin: 6px 0; }
+  </style>
+</head>
+<body>
+  <h1>CarDatabases QA & E2E Reports Hub</h1>
+  <p>Select an environment report below to view full interactive Playwright test proofs, screenshots, and logs:</p>
+  
+  <div class="card">
+    <span class="badge badge-qa">Dev QA (Staging Domain)</span>
+    <h3>Dev QA Test Report</h3>
+    <p>Full E2E test execution against <strong>https://dev.cardatabases.com</strong> including full Stripe checkout and customer onboarding.</p>
+    <a class="btn" href="./dev-qa/">Open Dev QA Report &rarr;</a>
+  </div>
+
+  <div class="card">
+    <span class="badge badge-prod">Production (Live Domain)</span>
+    <h3>Production Test Report</h3>
+    <p>Automated regression suite against <strong>https://cardatabases.com</strong> with live purchase safeguards.</p>
+    <a class="btn" href="./production/">Open Production Report &rarr;</a>
+  </div>
+</body>
+</html>
