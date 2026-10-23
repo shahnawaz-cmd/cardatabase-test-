@@ -1,0 +1,19 @@
+{
+  "name": "cardatabases-e2e-tests",
+  "version": "1.0.0",
+  "description": "Enterprise Playwright E2E Test Suite for dev.cardatabases.com",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:purchase": "npx playwright test tests/e2e_purchase_flow.spec.js",
+    "test:auth": "npx playwright test tests/e2e_auth_portal.spec.js",
+    "test:catalog": "npx playwright test tests/e2e_catalog_makes.spec.js",
+    "test:alternatives": "npx playwright test tests/e2e_alternatives_comparison.spec.js",
+    "test:functional": "npx playwright test tests/e2e_functional_contact_and_cart.spec.js",
+    "test:mobile": "npx playwright test tests/e2e_responsive_mobile.spec.js",
+    "test:api": "npx playwright test tests/api_health_check.spec.js",
+    "report": "npx playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}
