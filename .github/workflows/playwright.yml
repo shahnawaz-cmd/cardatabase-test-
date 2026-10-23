@@ -26,6 +26,10 @@ jobs:
     name: Run E2E & Functional Test Suite
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
 
     steps:
       - name: Checkout Repository
@@ -83,8 +87,6 @@ jobs:
       - name: Setup GitHub Pages
         if: always() && github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Upload GitHub Pages Artifact (All Report Assets, Screenshots & Data)
         if: always() && github.ref == 'refs/heads/main'
